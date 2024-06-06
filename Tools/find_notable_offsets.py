@@ -87,10 +87,10 @@ for filename in os.listdir(sys.argv[1]):
                 continue
             dec_id = int(hex_id,16) 
             
-            byteSplit = [data[i:i+2] for i in range(8, len(data), 2)]
+            byteSplit = [data[i:i+2] for i in range(56, len(data), 2)]
             for byte in range(len(byteSplit)):
                 value = byteSplit[byte]
-                offset = byte + 4
+                offset = byte + 28
                 if value == '00':
                     continue
 
