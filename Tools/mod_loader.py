@@ -38,7 +38,7 @@ frame.config(menu=menubar)
 #######################################
 # Program state
 enabledMod = None
-currentScreen = Screen.NO_MOD_LOADED
+currentScreen = Screen.NO_BILLY_DIRECTORY
 #######################################
 
 class Mod:
@@ -118,6 +118,12 @@ class Mod:
     def __repr__(self):
         return self.__str__()
 
+def setBillyDirectory():
+    # TODO: it should set dir and refresh mod list
+    global currentScreen
+    currentScreen = Screen.NO_MOD_LOADED
+    refresh()
+    pass
 def refreshModList():
     # TODO: parse out mod folders and add to mods list
     pass
@@ -131,7 +137,9 @@ def refresh():
     clear()
 
     if currentScreen == Screen.NO_BILLY_DIRECTORY:
-        pass
+        selectDirectoryButton = tk.Button(frame, text="Billy Directory not set. Click to set", command=setBillyDirectory, width=FRAME_WIDTH, height=FRAME_HEIGHT)
+        selectDirectoryButton.pack()
+        
     else:
         if currentScreen == Screen.MOD_LOADED:
             currentModLabel = tk.Label(frame, text="Current Mod:")
