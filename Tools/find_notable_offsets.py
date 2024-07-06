@@ -17,14 +17,14 @@ Print each as:
 dec_id/hex_id decoffsets/hexoffsets
 '''
 def prettyprint(obj,ene,cam,design):
-    with open('usedoffsets.csv','w',newline='') as file:
+    with open('usedoffsets.csv','w',newline='',encoding='utf-8') as file:
         output = csv.writer(file)
-        headers = ["Decimal Set ID", "Hex Set ID", "Decimal Notable Offsets", "Hex Notable Offsets"]
+        headers = ["Decimal Set ID", "Hex Set ID", "Notable Parameters"]
         
         output.writerow(["Object Offsets"])
         output.writerow(headers)
         for entry in obj: 
-            output.writerow([entry[0],hex(entry[0]),entry[1],[hex(x) for x in entry[1]]])
+            output.writerow([entry[0],hex(entry[0]),entry[1]])
         
         output.writerow("")
         output.writerow(["Enemy Offsets"])
@@ -44,6 +44,14 @@ def prettyprint(obj,ene,cam,design):
         for entry in design: 
             output.writerow([entry[0],hex(entry[0]),entry[1],[hex(x) for x in entry[1]]])
 
+def getParameter(sizes, offset):
+    total = 0
+    ind = 0
+    for ind in range(len(sizes)):
+        total += sizes[ind][0]
+        if total > offset:
+            return sizes[ind][1]
+    return "Out of Bounds"
 
 if not len(sys.argv) == 2:
     print("script <billy/folder/path>")
@@ -54,6 +62,7 @@ ene = {}
 cam = {}
 design = {}
 
+invisibleSpace = '\u200B'
 for filename in os.listdir(sys.argv[1]):
     if not filename.endswith('.bin') or not filename.startswith('set'):
         continue
@@ -65,6 +74,28 @@ for filename in os.listdir(sys.argv[1]):
     elif 'obj' in filename:
         struct_type = 'object'
         struct_size = 64 # size in bytes of 1 object
+        struct_arg_sizes = \
+            [ # could add these in a loop after?
+                (4 , invisibleSpace * 1 + 'ID'),
+                (4 , invisibleSpace * 2 + 'X pos'),
+                (4 , invisibleSpace * 3 + 'Y pos'),
+                (4 , invisibleSpace * 4 + 'Z pos'),
+                (4 , invisibleSpace * 5 + 'X rotation'),
+                (4 , invisibleSpace * 6 + 'Y rotation'),
+                (4 , invisibleSpace * 7 + 'Z rotation'),
+                (4 , invisibleSpace * 8 + 'Int Param 1'),
+                (4 , invisibleSpace * 9 + 'Int Param 2'),
+                (4 , invisibleSpace * 10 + 'Int Param 3'),
+                (4 , invisibleSpace * 11 + 'Int Param 4'),
+                (4 , invisibleSpace * 12 + 'Float Param 1'),
+                (4 , invisibleSpace * 13 + 'Float Param 2'),
+                (4 , invisibleSpace * 14 + 'Float Param 3'),
+                (4 , invisibleSpace * 15 + 'Float Param 4'),
+                (1 , invisibleSpace * 16 + 'Byte Param 1'),
+                (1 , invisibleSpace * 17 + 'Byte Param 2'),
+                (1 , invisibleSpace * 18 + 'Byte Param 3'),
+                (1 , invisibleSpace * 19 + 'Byte Param 4')
+            ]
     elif 'design' in filename:
         struct_type = 'design'
         struct_size = 64 # size in bytes of 1 design
@@ -73,7 +104,7 @@ for filename in os.listdir(sys.argv[1]):
         struct_size = 64 # maybe cam size...
         continue # skip for now
 
-	# Read the set file
+    # Read the set file
     with open(f"{sys.argv[1]}/{filename}","rb") as setfile:
         # Get filesize
         setfile.seek(0,2)
@@ -101,7 +132,7 @@ for filename in os.listdir(sys.argv[1]):
                 elif struct_type == 'object':
                     if dec_id not in obj:
                         obj[dec_id] = set()
-                    obj[dec_id].add(offset)
+                    obj[dec_id].add(getParameter(struct_arg_sizes, offset))
                 elif struct_type == 'design':
                     if dec_id not in design:
                         design[dec_id] = set()
