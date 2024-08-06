@@ -4,6 +4,12 @@ This helps see how the game uses/modifies the values
 Note that this relies on the data within the set files in the folder provided
 '''
 
+import struct
+from binascii import hexlify
+import sys
+import os
+
+
 fcontent = '''
 <!DOCTYPE html>
 <html>
@@ -31,34 +37,6 @@ fcontent = '''
 <body>
 '''
 
-'''
-Dictionary Structure:
-
-obj {
-    Object id {
-        Parameter {
-            Value : [Levels]
-            Value2 : [Levels]
-        }
-        Parameter2 {
-            etc.
-        }
-    }
-    ID2 {
-        etc.
-    }
-}
-'''
-
-
-import struct
-import os.path as osp
-import json
-from binascii import hexlify
-import sys
-import os
-import csv
-
 if not len(sys.argv) == 2 and not len(sys.argv) == 6:
     print("script <billy/folder/path>")
     exit(0)
@@ -68,6 +46,8 @@ def sort_dict(d):
         return {k: sort_dict(v) for k, v in sorted(d.items())}
     elif isinstance(d, list):
         return [sort_dict(i) for i in sorted(d)]
+    elif isinstance(d, set):
+        return sorted(d)
     else:
         return d
 
@@ -76,41 +56,6 @@ def getDecValueForFloatHex(hStr):
 
 def getSignedFromUnsignedValue(val, blen):
     return int.from_bytes(val.to_bytes(blen, byteorder='big', signed=False), byteorder='big', signed=True)
-
-def prettyprint(obj,ene,cam,design):
-    headers = ["ID", "Param", "Hex Value", "Dec Value", "Filenames"]
-    ignoredKeys = ["ID", "X pos", "Y pos", "Z pos", "X rotation", "Y rotation", "Z rotation"]
-
-    with open('offsetusage.csv','w',newline='',encoding='utf-8') as file:
-        output = csv.writer(file)
-        
-        def printDict(dictName, dict):
-            output.writerow([f"{dictName} Offsets"])
-            output.writerow(headers)
-
-            reverse_mapping = {}
-            for key, values in dict.items():
-                for value in values:
-                    filename, val1, val2 = value
-                    if (val1, val2) not in reverse_mapping:
-                        reverse_mapping[(val1, val2)] = []
-                    reverse_mapping[(val1, val2)].append(filename)
-
-            for key, values in dict.items():
-                if key[1].replace(invisibleSpace, "") in ignoredKeys:
-                    continue
-
-                unique_values = set((val1, val2) for filename, val1, val2 in values)
-                for val1, val2 in unique_values:
-                    filenames = reverse_mapping[(val1, val2)]
-                    output.writerow([key[0], key[1], val1, val2, ', '.join(filenames)])
-
-            output.writerow("")     
-    
-        printDict('Object', obj)
-        printDict('Enemy', ene)
-        printDict('Camera', cam)
-        printDict('Design', design)
 
 def printToHTML(obj,ene,cam,design):
     global fcontent 
@@ -185,13 +130,29 @@ def getParameter(sizes, offset):
             return sizes[ind][1]
     return "Out of Bounds"
 
-#setID = sys.argv[3]
+##################################################################################
+'''
+Dictionary Structure:
+dict {
+    set id {
+        Parameter {
+            Value : [Levels]
+            Value2 : [Levels]
+        }
+        Parameter2 {
+            etc.
+        }
+    }
+    ID2 {
+        etc.
+    }
+}
+'''
 
 obj = {}
 ene = {}
 cam = {}
 design = {}
-invisibleSpace = '\u200B'
 
 for filename in os.listdir(sys.argv[1]):
     if not filename.endswith('.bin') or not filename.startswith('set'):
@@ -401,15 +362,6 @@ for filename in os.listdir(sys.argv[1]):
                 
                 byte += struct_arg_sizes[i][0]
                 i += 1
-                i %= len(struct_arg_sizes)
 
-
-# This is a tad ridiculous but whatever
-#prettyprint(obj,ene,cam,design)
+##################################################################################
 printToHTML(obj,ene,cam,design)
-# prettyprint(
-#     sorted({k: sorted(v) for k, v in sorted(obj.items())}.items()), 
-#     sorted({k: sorted(v) for k, v in sorted(ene.items())}.items()),
-#     sorted({k: sorted(v) for k, v in sorted(cam.items())}.items()),
-#     sorted({k: sorted(v) for k, v in sorted(design.items())}.items())
-# )
